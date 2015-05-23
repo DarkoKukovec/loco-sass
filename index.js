@@ -10,7 +10,8 @@ function importer(options) {
   function parseFile(p, wholeFile, done) {
     var opts = Object.create(options);
     opts.file = p;
-    opts.sourceMapEmbed = true;
+    opts.sourceMap = false;
+    opts.sourceMapEmbed = false;
 
     sass.render(opts, function(err, results) {
       if (err) {
@@ -23,7 +24,7 @@ function importer(options) {
             done(new Error(err));
           } else {
             done({ contents: res.css });
-            if (res.map) {
+            if (res.map && res.map.path) {
               fs.writeFileSync(res.map.path, res.map.content);
             }
           }
