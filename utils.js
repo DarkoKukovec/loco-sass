@@ -59,7 +59,7 @@ var utils = {
   },
 
   formatMap: function(map) {
-    var out = 'module.extends = ';
+    var out = 'module.exports = ';
 
     out += JSON.stringify(map);
 
