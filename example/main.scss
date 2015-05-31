@@ -1,6 +1,8 @@
+@import 'vars';
+
 @import 'test';
 @import 'folder/test2';
 
 body {
-  color: red;
+  color: $text;
 }

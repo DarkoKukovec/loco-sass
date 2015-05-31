@@ -1,4 +1,4 @@
-var locosass = require('./index');
+var locoscss = require('./index');
 
 var src = 'example/main.scss';
 var dest = {
@@ -6,22 +6,12 @@ var dest = {
   scripts: 'example/dist/scripts/'
 };
 
-var result = locosass.render({
+locoscss.render({
   file: src,
-  outFile: dest.styles,
-  sourceMap: true,
   loco: {
-    src: src,
-    dest: dest.scripts,
+    dest: dest,
     format: '%filepath%_%selector%_%sha1:10%'
   }
-}, function(err, result) {
-  if (err) {
-    console.error(err);
-  } else {
-    console.log(result.css.toString());
-    // console.log(result.map.toString());
-    // console.log(result.stats);
-    // console.log(result.stats.includedFiles);
-  }
+}, function(err, res) {
+  console.log(res.css);
 });

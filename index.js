@@ -1,72 +1,61 @@
-var sass = require('node-sass');
-var path = require('path');
-var fs = require('fs');
-var lococss = require('loco-css');
+var nodesass = require('node-sass');
+var SourceMapConsumer = require('source-map').SourceMapConsumer;
+var postcss = require('postcss');
+var fs = require('fs-extra');
+var _ = require('lodash');
 
-var paths = ['%s', '_%s', '%s.scss', '_%s.scss', '%s.sass', '_%s.sass'];
-
-function importer(options) {
-
-  function parseFile(p, wholeFile, done) {
-    var opts = Object.create(options);
-    opts.file = p;
-    opts.sourceMap = false;
-    opts.sourceMapEmbed = false;
-
-    sass.render(opts, function(err, results) {
-      if (err) {
-        done(new Error(err));
-      } else {
-        var css = results.css.toString();
-        // TODO: use wholeFile option
-        lococss(css, p, options.loco, function(err, res) {
-          if (err) {
-            done(new Error(err));
-          } else {
-            done({ contents: res.css });
-            if (res.map && res.map.path) {
-              fs.writeFileSync(res.map.path, res.map.content);
-            }
-          }
-        });
-      }
-    });
-  }
-
-  return function importResolver(url, prev, done) {
-    var dir = path.dirname(prev);
-    var wholeFile = false;
-    if (url.indexOf('loco:') === 0) {
-      wholeFile = true;
-      url = url.slice(5);
-    }
-    var file = path.basename(url);
-    var folder = path.dirname(url);
-    for (var i = 0; i < paths.length; i++) {
-      var p = path.normalize(dir + '/' + folder + '/' + paths[i].replace('%s', file));
-      if (fs.existsSync(p)) {
-        return parseFile(p, wholeFile, done);
-      }
-    }
-    console.log(url, prev);
-    done(new Error('File not fount'));
-  };
-}
-
-function prepareOpts(options) {
-  var opts = Object.create(options);
-  opts.importer = importer(options);
-  return opts;
-}
+var postcssPlugin = require('./plugin');
+var utils = require('./utils');
 
 module.exports = {
-  render: function(options, cb) {
-    sass.render(prepareOpts(options), cb);
-  },
-  renderSync: function(options) {
-    sass.renderSync(prepareOpts(options));
-  },
-  info: function() {
-    return sass.info;
+  render: function(options, callbackFn) {
+    callbackFn = callbackFn || function() {};
+    nodesass.render(_.extend(options, {
+      outFile: options.loco.dest.styles,
+      sourceMap: true,
+      sourceMapEmbed: true,
+      sourceMapContents: true
+    }), function(err, result) {
+      if (err) {
+        console.log(err);
+        callbackFn(err);
+      } else {
+        var css = result.css.toString();
+
+        var opts = options.loco;
+
+        opts.format = opts.format || '%filepath%_%selector%_%sha1:5%';
+        if (typeof opts.format === 'string') {
+          opts.format = utils.formatWrapper(opts.format);
+        }
+
+        var selectorMap = {};
+
+        var pluginOptions = {
+          format: opts.format,
+          map: selectorMap,
+          sourceMap: new SourceMapConsumer(result.map.toString())
+        };
+
+        postcss()
+          .use(postcssPlugin(pluginOptions))
+          .process(css)
+          .then(function(res) {
+            // console.log(selectorMap);
+            fs.outputFileSync(opts.dest.styles, res.css);
+            _.each(selectorMap, function(map, file) {
+              // console.log(opts.dest.scripts + '/' + file + '.css.js');
+              fs.outputFileSync(opts.dest.scripts + '/' + file + '.css.js', utils.formatMap(map));
+            });
+            callbackFn(null, {
+              css: res.css,
+              map: Object.keys(selectorMap).length ? { content: selectorMap } : null
+            });
+          }, function(err) {
+            console.log(err);
+            callbackFn(err);
+          });
+      }
+    });
   }
 };
