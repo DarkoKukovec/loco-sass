@@ -37,8 +37,9 @@ module.exports = {
           sourceMap: new SourceMapConsumer(result.map.toString())
         };
 
-        postcss()
-          .use(postcssPlugin(pluginOptions))
+        var plugins = [postcssPlugin(pluginOptions)].concat(options.plugins);
+
+        postcss(_.compact(plugins))
           .process(css)
           .then(function(res) {
             // console.log(selectorMap);

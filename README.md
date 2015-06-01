@@ -24,6 +24,9 @@ rename all class names and ids inside of @local rules to unique names
       * as the only argument receives an object with filepath, filename, selector and rawFile
       * filename and filepath are already sanitized
       * filename, filepath and rawFile don't contain the file extension
+  * plugins
+    * array of postcss plugins that should be executed
+    * default: ``[]``
 
 ## example
 
