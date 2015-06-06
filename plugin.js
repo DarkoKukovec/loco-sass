@@ -23,7 +23,6 @@ module.exports = postcss.plugin('postcss-locoscss', function(opts) {
     };
 
     var transformedSelector = opts.format(formatOpts);
-    console.log(formatOpts, transformedSelector, file);
     opts.map[file] = opts.map[file] || {};
     opts.map[file][selector] = transformedSelector;
     return selectorAll.replace(selectorName, selectorType + transformedSelector);
